@@ -103,8 +103,10 @@ impl Scratchcard {
 
     /// Runs the count and copy algorithm for part 2
     pub fn run_copy_game(scratchcards: &mut [Self]) -> usize {
+        let mut final_count = 0;
         let card_count = scratchcards.len();
         for i in 0..card_count {
+            final_count += scratchcards[i].count;
             let match_count = scratchcards[i].calculate_matching_count();
             let copy_range = if (i + match_count) > card_count {
                 (i + 1)..=(card_count - 1)
@@ -116,9 +118,7 @@ impl Scratchcard {
             }
         }
 
-        scratchcards
-            .iter()
-            .fold(0, |card_count, card| card_count + card.count)
+        final_count
     }
 }
 
