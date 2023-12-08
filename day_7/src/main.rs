@@ -7,49 +7,33 @@ use std::str::FromStr;
 struct ParseHandError;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
-enum Card {
+enum PartOneCard {
     Ace,
     King,
     Queen,
     Jack,
-    Ten,
-    Nine,
-    Eight,
-    Seven,
-    Six,
-    Five,
-    Four,
-    Three,
-    Two,
+    Number(u32),
 }
 
-impl From<Card> for u32 {
-    fn from(value: Card) -> Self {
+impl From<PartOneCard> for u32 {
+    fn from(value: PartOneCard) -> Self {
         match value {
-            Card::Ace => 14,
-            Card::King => 13,
-            Card::Queen => 12,
-            Card::Jack => 11,
-            Card::Ten => 10,
-            Card::Nine => 9,
-            Card::Eight => 8,
-            Card::Seven => 7,
-            Card::Six => 6,
-            Card::Five => 5,
-            Card::Four => 4,
-            Card::Three => 3,
-            Card::Two => 2,
+            PartOneCard::Ace => 14,
+            PartOneCard::King => 13,
+            PartOneCard::Queen => 12,
+            PartOneCard::Jack => 11,
+            PartOneCard::Number(val) => val,
         }
     }
 }
 
-impl PartialOrd for Card {
+impl PartialOrd for PartOneCard {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Card {
+impl Ord for PartOneCard {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_num: u32 = (*self).into();
         let other_num: u32 = (*other).into();
@@ -58,7 +42,7 @@ impl Ord for Card {
     }
 }
 
-impl TryFrom<char> for Card {
+impl TryFrom<char> for PartOneCard {
     type Error = ParseHandError;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
@@ -67,15 +51,72 @@ impl TryFrom<char> for Card {
             'K' => Ok(Self::King),
             'Q' => Ok(Self::Queen),
             'J' => Ok(Self::Jack),
-            'T' => Ok(Self::Ten),
-            '9' => Ok(Self::Nine),
-            '8' => Ok(Self::Eight),
-            '7' => Ok(Self::Seven),
-            '6' => Ok(Self::Six),
-            '5' => Ok(Self::Five),
-            '4' => Ok(Self::Four),
-            '3' => Ok(Self::Three),
-            '2' => Ok(Self::Two),
+            'T' => Ok(Self::Number(10)),
+            '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2' => {
+                let val = match value.to_digit(10) {
+                    Some(num) => num,
+                    None => return Err(ParseHandError),
+                };
+                Ok(Self::Number(val))
+            }
+            _ => Err(ParseHandError),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
+enum PartTwoCard {
+    Ace,
+    King,
+    Queen,
+    Number(u32),
+    Joker,
+}
+
+impl From<PartTwoCard> for u32 {
+    fn from(value: PartTwoCard) -> Self {
+        match value {
+            PartTwoCard::Ace => 14,
+            PartTwoCard::King => 13,
+            PartTwoCard::Queen => 12,
+            PartTwoCard::Joker => 1,
+            PartTwoCard::Number(val) => val,
+        }
+    }
+}
+
+impl PartialOrd for PartTwoCard {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PartTwoCard {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let self_num: u32 = (*self).into();
+        let other_num: u32 = (*other).into();
+
+        self_num.cmp(&other_num)
+    }
+}
+
+impl TryFrom<char> for PartTwoCard {
+    type Error = ParseHandError;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            'A' => Ok(Self::Ace),
+            'K' => Ok(Self::King),
+            'Q' => Ok(Self::Queen),
+            'T' => Ok(Self::Number(10)),
+            '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2' => {
+                let val = match value.to_digit(10) {
+                    Some(num) => num,
+                    None => return Err(ParseHandError),
+                };
+                Ok(Self::Number(val))
+            }
+            'J' => Ok(Self::Joker),
             _ => Err(ParseHandError),
         }
     }
@@ -122,8 +163,8 @@ impl Ord for HandType {
 }
 
 impl HandType {
-    fn new(cards: &[Card; 5]) -> Self {
-        let mut card_map: HashMap<Card, u32> = HashMap::new();
+    fn new(cards: &[PartOneCard; 5]) -> Self {
+        let mut card_map: HashMap<PartOneCard, u32> = HashMap::new();
         for card in cards {
             match card_map.get_mut(card) {
                 Some(count) => *count += 1,
@@ -164,7 +205,7 @@ impl HandType {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 struct Hand {
-    cards: [Card; 5],
+    cards: [PartOneCard; 5],
     hand_type: HandType,
     bet: u64,
 }
@@ -181,9 +222,9 @@ impl FromStr for Hand {
             return Err(ParseHandError);
         }
 
-        let mut cards = [Card::Ace; 5];
+        let mut cards = [PartOneCard::Ace; 5];
         for (i, c) in cards_str.chars().take(5).enumerate() {
-            let card: Card = c.try_into()?;
+            let card: PartOneCard = c.try_into()?;
             cards[i] = card;
         }
 
@@ -255,13 +296,13 @@ fn main() {
 #[cfg(test)]
 mod test {
     mod card {
-        use crate::{Card, ParseHandError};
+        use crate::{ParseHandError, PartOneCard};
 
         #[test]
         fn try_parse_from_char() {
             let test_data = [
-                ('A', Ok(Card::Ace)),
-                ('4', Ok(Card::Four)),
+                ('A', Ok(PartOneCard::Ace)),
+                ('4', Ok(PartOneCard::Number(4))),
                 ('Z', Err(ParseHandError)),
             ];
 
@@ -271,7 +312,7 @@ mod test {
         }
     }
     mod hand {
-        use crate::{Card, Hand, HandType, ParseHandError};
+        use crate::{Hand, HandType, ParseHandError, PartOneCard};
 
         const INPUT_DATA: &str = "32T3K 765\n\
                                   T55J5 684\n\
@@ -285,7 +326,13 @@ mod test {
                 (
                     "TTT98 256",
                     Ok(Hand {
-                        cards: [Card::Ten, Card::Ten, Card::Ten, Card::Nine, Card::Eight],
+                        cards: [
+                            PartOneCard::Number(10),
+                            PartOneCard::Number(10),
+                            PartOneCard::Number(10),
+                            PartOneCard::Number(9),
+                            PartOneCard::Number(8),
+                        ],
                         hand_type: HandType::ThreeOfAKind,
                         bet: 256,
                     }),
