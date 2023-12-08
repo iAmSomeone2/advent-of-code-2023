@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::str::FromStr;
+use rayon::prelude::*;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 enum Direction {
@@ -35,7 +36,6 @@ struct Node {
     name: String,
     left: String,
     right: String,
-    index: Option<usize>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -66,14 +66,7 @@ impl FromStr for Node {
             name: name.to_string(),
             left,
             right,
-            index: None,
         })
-    }
-}
-
-impl Node {
-    fn set_index(&mut self, index: usize) {
-        self.index = Some(index);
     }
 }
 
@@ -103,12 +96,9 @@ impl FromStr for NodeMap {
 
         // Skip the empty line and begin processing Nodes
         let _ = lines.next().ok_or(ParseNodeMapError)?;
-        let mut first_node = String::new();
-        let mut last_node = String::new();
         let mut node_map = HashMap::new();
-        for (i, line) in lines.enumerate() {
-            let mut node = line.parse::<Node>().or(Err(ParseNodeMapError))?;
-            node.set_index(i);
+        for line in lines {
+            let node = line.parse::<Node>().or(Err(ParseNodeMapError))?;
             node_map.insert(node.name.clone(), node);
         }
 
@@ -145,6 +135,74 @@ impl NodeMap {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+struct GhostNodeMap {
+    directions: Vec<Direction>,
+    nodes: HashMap<String, Node>,
+    start_keys: Vec<String>,
+}
+
+impl FromStr for GhostNodeMap {
+    type Err = ParseNodeMapError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut lines = s.lines();
+
+        // Get directions from the first line
+        let line = lines.next().ok_or(ParseNodeMapError)?;
+        let directions = Direction::parse_directions(line);
+        if directions.is_empty() {
+            return Err(ParseNodeMapError);
+        }
+
+        // Skip the empty line and begin processing Nodes
+        let _ = lines.next().ok_or(ParseNodeMapError)?;
+        let mut start_keys = vec![];
+        let mut node_map = HashMap::new();
+        for line in lines {
+            let node = line.parse::<Node>().or(Err(ParseNodeMapError))?;
+            let node_name = node.name.clone();
+            node_map.insert(node_name.clone(), node);
+            if node_name.ends_with('A') {
+                start_keys.push(node_name);
+            }
+        }
+
+        Ok(Self {
+            directions,
+            nodes: node_map,
+            start_keys,
+        })
+    }
+}
+
+impl GhostNodeMap {
+    fn count_steps(&self) -> usize {
+        let mut current_keys = self.start_keys.clone();
+        let mut step_count = 0;
+        let mut dir_idx = 0;
+        let mut all_end_keys = false;
+        while !all_end_keys {
+            current_keys.par_iter_mut()
+                .for_each(|key| {
+                    let node = self.nodes.get(key).unwrap();
+                    *key = match self.directions[dir_idx] {
+                        Direction::Left => node.left.clone(),
+                        Direction::Right => node.right.clone(),
+                    };
+                });
+            all_end_keys = current_keys.par_iter().all(|key| key.ends_with('Z'));
+            step_count += 1;
+            dir_idx += 1;
+            if dir_idx >= self.directions.len() {
+                dir_idx = 0;
+            }
+        }
+
+        step_count
+    }
+}
+
 fn main() {
     let node_map = fs::read_to_string("input.txt")
         .expect("failed to open input file. Check that it exists at 'input.txt'")
@@ -154,6 +212,15 @@ fn main() {
     let steps = node_map.count_steps();
 
     println!("Part 1 result: {steps}");
+
+    let node_map = fs::read_to_string("input.txt")
+        .expect("failed to open input file. Check that it exists at 'input.txt'")
+        .parse::<GhostNodeMap>()
+        .expect("failed to parse input data");
+
+    let steps = node_map.count_steps();
+
+    println!("Part 2 result: {steps}");
 }
 
 #[cfg(test)]
@@ -184,7 +251,6 @@ mod test {
                 name: String::from("AAA"),
                 left: String::from("BBB"),
                 right: String::from("CCC"),
-                index: None,
             };
 
             assert_eq!(input.parse(), Ok(expected));
@@ -232,6 +298,43 @@ mod test {
             assert_eq!(node_map.count_steps(), expected);
 
             let node_map = TEST_INPUT_2.parse::<NodeMap>().unwrap();
+            let expected = 6;
+
+            assert_eq!(node_map.count_steps(), expected);
+        }
+    }
+    mod ghost_node_map {
+        use crate::{GhostNodeMap};
+
+        const P2_INPUT: &str = "LR\n\
+                                \n\
+                                11A = (11B, XXX)\n\
+                                11B = (XXX, 11Z)\n\
+                                11Z = (11B, XXX)\n\
+                                22A = (22B, XXX)\n\
+                                22B = (22C, 22C)\n\
+                                22C = (22Z, 22Z)\n\
+                                22Z = (22B, 22B)\n\
+                                XXX = (XXX, XXX)";
+
+        #[test]
+        fn parse_from_str() {
+            let direction_count = 2;
+            let node_count = 8;
+            let start_key_count = 2;
+
+            let node_map = P2_INPUT.parse::<GhostNodeMap>();
+            assert!(node_map.is_ok());
+            let node_map = node_map.unwrap();
+
+            assert_eq!(node_map.directions.len(), direction_count);
+            assert_eq!(node_map.nodes.len(), node_count);
+            assert_eq!(node_map.start_keys.len(), start_key_count);
+        }
+
+        #[test]
+        fn count_steps() {
+            let node_map = P2_INPUT.parse::<GhostNodeMap>().unwrap();
             let expected = 6;
 
             assert_eq!(node_map.count_steps(), expected);
