@@ -7,7 +7,7 @@ enum TileType {
     NORTH_WEST_BEND = '┛',
     SOUTH_WEST_BEND = '┓',
     SOUTH_EAST_BEND = '┏',
-    GROUND = '░',
+    GROUND = '▒',
     START = '╳'
 }
 
