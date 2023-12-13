@@ -104,6 +104,12 @@ impl FromStr for GalaxyMap {
 impl GalaxyMap {
     /// Expands the number of empty rows and columns between [Galaxy] instances
     fn expand_empty_space(&mut self, amt: u64) {
+        let amt = if amt == 1 {
+            amt
+        } else {
+            amt - 1
+        };
+
         let mut row = 0;
         while row < self.height {
             let is_empty = self
@@ -276,7 +282,7 @@ mod test {
 
     mod galaxy_map {
         use crate::test::{TEST_GALAXY_MAP, TEST_INPUT};
-        use crate::{GalaxyMap, P2_AMT};
+        use crate::GalaxyMap;
 
         #[test]
         fn parse_from_str() {
@@ -317,9 +323,9 @@ mod test {
         #[test]
         fn sum_galaxy_steps_p2() {
             let mut test_map = TEST_GALAXY_MAP.clone();
-            test_map.expand_empty_space(10);
+            test_map.expand_empty_space(100);
 
-            assert_eq!(test_map.sum_galaxy_steps(), 1030);
+            assert_eq!(test_map.sum_galaxy_steps(), 8410);
         }
     }
 }
