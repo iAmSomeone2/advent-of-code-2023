@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fs;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
@@ -13,9 +14,9 @@ struct Galaxy {
 impl Galaxy {
     fn steps_to(&self, other: &Galaxy) -> u64 {
         return if self.x == other.x {
-            self.y.abs_diff(other.y) + 1
+            self.y.abs_diff(other.y)
         } else if self.y == other.y {
-            self.x.abs_diff(other.x) + 1
+            self.x.abs_diff(other.x)
         } else {
             self.x.abs_diff(other.x) + self.y.abs_diff(other.y)
         };
@@ -102,7 +103,7 @@ impl FromStr for GalaxyMap {
 
 impl GalaxyMap {
     /// Expands the number of empty rows and columns between [Galaxy] instances
-    fn expand_empty_space(&mut self) {
+    fn expand_empty_space(&mut self, amt: u64) {
         let mut row = 0;
         while row < self.height {
             let is_empty = self
@@ -116,10 +117,10 @@ impl GalaxyMap {
                     .iter_mut()
                     .filter(|galaxy| galaxy.y > row)
                     .for_each(|galaxy| {
-                        galaxy.y += 1;
+                        galaxy.y += amt;
                     });
-                self.height += 1;
-                row += 1;
+                self.height += amt;
+                row += amt;
             }
             row += 1;
         }
@@ -137,10 +138,10 @@ impl GalaxyMap {
                     .iter_mut()
                     .filter(|galaxy| galaxy.x > col)
                     .for_each(|galaxy| {
-                        galaxy.x += 1;
+                        galaxy.x += amt;
                     });
-                self.width += 1;
-                col += 1;
+                self.width += amt;
+                col += amt;
             }
             col += 1;
         }
@@ -173,8 +174,22 @@ impl GalaxyMap {
     }
 }
 
+const P2_AMT: u64 = 1_000_000;
+
 fn main() {
-    println!("Hello, world!");
+    let mut galaxy_map_p1 = fs::read_to_string("input.txt")
+        .expect("failed to open input file")
+        .parse::<GalaxyMap>()
+        .expect("failed to parse input data");
+    let mut galaxy_map_p2 = galaxy_map_p1.clone();
+
+    galaxy_map_p1.expand_empty_space(1);
+    let sum_of_distances = galaxy_map_p1.sum_galaxy_steps();
+    println!("Part 1 result: {}", sum_of_distances);
+
+    galaxy_map_p2.expand_empty_space(P2_AMT);
+    let sum_of_distances = galaxy_map_p2.sum_galaxy_steps();
+    println!("Part 2 result: {}", sum_of_distances);
 }
 
 #[cfg(test)]
@@ -235,7 +250,7 @@ mod test {
         fn vertical_distance() {
             let g0 = Galaxy { x: 4, y: 10 };
             let g1 = Galaxy { x: 4, y: 3 };
-            let expected = 8;
+            let expected = 7;
 
             assert_eq!(g0.steps_to(&g1), expected);
         }
@@ -244,7 +259,7 @@ mod test {
         fn horizontal_distance() {
             let g0 = Galaxy { x: 10, y: 3 };
             let g1 = Galaxy { x: 4, y: 3 };
-            let expected = 7;
+            let expected = 6;
 
             assert_eq!(g0.steps_to(&g1), expected);
         }
@@ -261,7 +276,7 @@ mod test {
 
     mod galaxy_map {
         use crate::test::{TEST_GALAXY_MAP, TEST_INPUT};
-        use crate::GalaxyMap;
+        use crate::{GalaxyMap, P2_AMT};
 
         #[test]
         fn parse_from_str() {
@@ -278,7 +293,7 @@ mod test {
         fn expand_empty_space() {
             let mut test_map = TEST_GALAXY_MAP.clone();
 
-            test_map.expand_empty_space();
+            test_map.expand_empty_space(1);
             assert_eq!(test_map.height, 12);
             assert_eq!(test_map.width, 13);
         }
@@ -292,8 +307,19 @@ mod test {
         }
 
         #[test]
-        fn sum_galaxy_steps() {
-            assert_eq!(TEST_GALAXY_MAP.sum_galaxy_steps(), 374);
+        fn sum_galaxy_steps_p1() {
+            let mut test_map = TEST_GALAXY_MAP.clone();
+            test_map.expand_empty_space(1);
+
+            assert_eq!(test_map.sum_galaxy_steps(), 374);
+        }
+
+        #[test]
+        fn sum_galaxy_steps_p2() {
+            let mut test_map = TEST_GALAXY_MAP.clone();
+            test_map.expand_empty_space(10);
+
+            assert_eq!(test_map.sum_galaxy_steps(), 1030);
         }
     }
 }
