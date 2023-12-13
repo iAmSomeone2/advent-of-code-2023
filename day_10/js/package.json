@@ -1,0 +1,19 @@
+{
+  "name": "aoc-day10",
+  "version": "1.0.0",
+  "description": "Advent of Code - Day 10",
+  "main": "main.mjs",
+  "type": "module",
+  "author": "Brenden Davidson",
+  "license": "GPLv3",
+  "private": true,
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "prestart": "yarn build",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "typescript": "^5.3.3"
+  }
+}
