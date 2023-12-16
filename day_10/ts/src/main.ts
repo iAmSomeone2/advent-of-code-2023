@@ -158,7 +158,7 @@ class MazeTile {
         return tile;
     }
 
-    private getConnections(): {con0: Position, con1: Position} {
+    private getConnections(): { con0: Position, con1: Position } {
         const type = this.type;
         const pos = this.position;
         let con0 = new Position();
@@ -167,27 +167,27 @@ class MazeTile {
             case TileType.HORIZONTAL:
                 con0 = new Position(pos.x - 1, pos.y);
                 con1 = new Position(pos.x + 1, pos.y);
-            break;
+                break;
             case TileType.VERTICAL:
                 con0 = new Position(pos.x, pos.y - 1);
                 con1 = new Position(pos.x, pos.y + 1);
-            break;
+                break;
             case TileType.NORTH_EAST_BEND:
                 con0 = new Position(pos.x, pos.y - 1);
                 con1 = new Position(pos.x + 1, pos.y);
-            break;
+                break;
             case TileType.NORTH_WEST_BEND:
                 con0 = new Position(pos.x, pos.y - 1);
                 con1 = new Position(pos.x - 1, pos.y);
-            break;
+                break;
             case TileType.SOUTH_EAST_BEND:
                 con0 = new Position(pos.x, pos.y + 1);
                 con1 = new Position(pos.x + 1, pos.y);
-            break;
+                break;
             case TileType.SOUTH_WEST_BEND:
                 con0 = new Position(pos.x, pos.y + 1);
                 con1 = new Position(pos.x - 1, pos.y);
-            break;
+                break;
         }
 
         return { con0, con1 };
@@ -225,7 +225,7 @@ LJ.LJ
 `;
 
 async function main() {
-    const input_str = await readFile("input.txt", {encoding: 'utf-8'});
+    const input_str = await readFile("input.txt", { encoding: 'utf-8' });
     const tiles: Array<Array<MazeTile>> = [];
     const lines = input_str.split(/\n\r?/);
     for (let y = 0; y < lines.length; y++) {
@@ -242,7 +242,7 @@ async function main() {
     if (!startTile) {
         throw new Error("Failed to find staring pipe");
     }
-    
+
     const furthestPt = MazeTile.traversePipes(tiles, startTile);
     MazeTile.printTiles(tiles);
     console.log(`Part 1 result: ${furthestPt}`);
