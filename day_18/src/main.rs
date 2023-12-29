@@ -310,7 +310,7 @@ impl LavaductLagoon {
         for _ in 0..rows {
             let mut row = Vec::with_capacity(cols);
             for _ in 0..cols {
-                let color = Rc::new(RefCell::new(Color::from(0xFFFFFF)));
+                let color = Rc::new(RefCell::new(Color::from(0x000000)));
                 row.push(color);
             }
             grid.push(row);
@@ -446,6 +446,8 @@ const TEST_INPUT: &str = "R 6 (#70c710)\n\
                           L 2 (#015232)\n\
                           U 2 (#7a21e3)";
 
+const LAVA_ORANGE: u32 = 0xF76806;
+
 fn main() {
     // let instructions = TEST_INPUT
     //     .lines()
@@ -463,7 +465,7 @@ fn main() {
     println!("Creating color grid...");
     let mut color_grid = lavaduct_lagoon.make_grid();
     println!("Filling lagoon...");
-    flood_fill(&mut color_grid, Color::from(0xFF0000));
+    flood_fill(&mut color_grid, Color::from(LAVA_ORANGE));
 
     println!("Writing image to file...");
     let out_img: RgbImage = ImageBuffer::from_fn(
